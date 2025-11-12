@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'data/base_url.dart';
 import 'login_page.dart';
+
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -20,7 +22,13 @@ class _SignUpPageState extends State<SignUpPage> {
   bool isLoading = false;
 
   Future<void> _signUp() async {
-    if (passwordController.text.trim() != confirmPasswordController.text.trim()) {
+    final firstName = firstNameController.text.trim();
+    final lastName = lastNameController.text.trim();
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+    final confirmPassword = confirmPasswordController.text.trim();
+
+    if (password != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Passwords do not match")),
       );
@@ -30,27 +38,42 @@ class _SignUpPageState extends State<SignUpPage> {
     setState(() => isLoading = true);
 
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
-      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-        'first_name': firstNameController.text.trim(),
-        'last_name': lastNameController.text.trim(),
-        'email': emailController.text.trim(),
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Account created successfully")),
+      final response = await http.post(
+        Uri.parse('$baseURL/api/signup'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'first_name': firstName,
+          'last_name': lastName,
+          'email': email,
+          'password': password,
+        }),
       );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
-    } on FirebaseAuthException catch (e) {
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['status'] == 'success') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Account created successfully")),
+          );
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(data['message'] ?? 'Sign up failed')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Server error: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? "Sign up failed")),
+        SnackBar(content: Text('Sign up failed: $e')),
       );
     } finally {
       setState(() => isLoading = false);
@@ -82,7 +105,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 30),
 
-              // First Name
               TextField(
                 controller: firstNameController,
                 decoration: const InputDecoration(
@@ -92,7 +114,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 20),
 
-              // Last Name
               TextField(
                 controller: lastNameController,
                 decoration: const InputDecoration(
@@ -102,7 +123,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 20),
 
-              // Email
               TextField(
                 controller: emailController,
                 decoration: const InputDecoration(
@@ -112,7 +132,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 20),
 
-              // Password
               TextField(
                 controller: passwordController,
                 obscureText: true,
@@ -123,7 +142,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 20),
 
-              // Confirm Password
               TextField(
                 controller: confirmPasswordController,
                 obscureText: true,
@@ -134,7 +152,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               const SizedBox(height: 30),
 
-              // Sign Up button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -149,9 +166,9 @@ class _SignUpPageState extends State<SignUpPage> {
                   child: isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
-                          'Create Account',
-                          style: TextStyle(fontSize: 18, color: Colors.white),
-                        ),
+                    'Create Account',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -164,7 +181,8 @@ class _SignUpPageState extends State<SignUpPage> {
                     onTap: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const LoginPage()),
+                        MaterialPageRoute(
+                            builder: (context) => const LoginPage()),
                       );
                     },
                     child: const Text(
