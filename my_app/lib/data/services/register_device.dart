@@ -1,9 +1,7 @@
 import 'package:http/http.dart' as http;
+import 'package:my_app/data/base_url.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-
-const String baseURL = "http://10.30.164.94:5001";
-// const baseURL = 'http://10.30.164.94:5001';
 
 Future<void> registerDevice(int studentId) async {
   final response = await http.post(
