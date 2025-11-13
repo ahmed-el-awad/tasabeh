@@ -1,1 +1,3 @@
-const String baseURL = String.fromEnvironment("SERVER_PATH");
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+final baseURL = dotenv.env['SERVER_PATH']!;
