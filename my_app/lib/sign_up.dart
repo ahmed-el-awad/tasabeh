@@ -39,7 +39,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('$baseURL/api/signup'),
+        Uri.parse('http://$baseURL/api/signup'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'first_name': firstName,
