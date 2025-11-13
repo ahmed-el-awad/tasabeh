@@ -1,1 +1,1 @@
-const String baseURL = String.fromEnvironment("DB_PATH");
+const String baseURL = String.fromEnvironment("SERVER_PATH");
