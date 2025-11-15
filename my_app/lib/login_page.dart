@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:my_app/data/base_url.dart';
@@ -24,6 +23,12 @@ class _LoginPageState extends State<LoginPage> {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+      return;
+    }
+
     try {
       final response = await http.post(
         Uri.parse("http://$baseURL/api/login"),
@@ -35,28 +40,26 @@ class _LoginPageState extends State<LoginPage> {
         final data = jsonDecode(response.body);
 
         if (data['status'] == 'success') {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Welcome ${data['name']}!')));
-
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const Dashboard()),
+            MaterialPageRoute(
+              builder: (context) => Dashboard(fullName: data['name']),
+            ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Invalid email or password.')),
+            SnackBar(content: Text(data['message'] ?? "Invalid credentials")),
           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Server error: ${response.statusCode}')),
+          SnackBar(content: Text("Server error: ${response.statusCode}")),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Login failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Login failed: $e")),
+      );
     }
   }
 
@@ -176,6 +179,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ],
               ),
+
               const SizedBox(height: 40),
             ],
           ),
