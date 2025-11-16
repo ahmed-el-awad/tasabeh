@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:network_info_plus/network_info_plus.dart';
 import 'dart:convert';
 
 import 'data/base_url.dart';
@@ -14,12 +15,15 @@ class StartAttendancePage extends StatefulWidget {
 class _StartAttendancePageState extends State<StartAttendancePage> {
   bool isLoading = false;
 
-  // Hardcoded for now — you can replace these with real values later
-  final String macAddress = "AA:BB:CC:DD:EE:FF"; // Example
-  final int sessionId = 1; // Example
+  final String macAddress = "AA:BB:CC:DD:EE:FF";
+  final int sessionId = 1;
 
   Future<void> _checkIn() async {
     setState(() => isLoading = true);
+
+    // Get real Wi-Fi IP
+    final info = NetworkInfo();
+    final deviceIp = await info.getWifiIP();
 
     try {
       final response = await http.post(
@@ -28,6 +32,7 @@ class _StartAttendancePageState extends State<StartAttendancePage> {
         body: jsonEncode({
           "mac": macAddress,
           "session_id": sessionId,
+          "device_ip": deviceIp, // CRITICAL
         }),
       );
 
@@ -35,38 +40,29 @@ class _StartAttendancePageState extends State<StartAttendancePage> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              "Check-in recorded for ${data['student']} (Wi-Fi: ${data['classroom_prefix']})",
-            ),
+            content: Text("Check-in recorded for ${data['student']}"),
             backgroundColor: Colors.green,
           ),
         );
-      } else if (response.statusCode == 403) {
+        return;
+      }
+
+      if (response.statusCode == 403) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("You must be on classroom Wi-Fi"),
             backgroundColor: Colors.red,
           ),
         );
-      } else if (response.statusCode == 404) {
-        final data = jsonDecode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(data['error']),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Server error: ${response.statusCode}"),
-            backgroundColor: Colors.red,
-          ),
-        );
+        return;
       }
+
+      final data = jsonDecode(response.body);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(data['error']), backgroundColor: Colors.red),
+      );
     } catch (e) {
       setState(() => isLoading = false);
 
@@ -82,63 +78,20 @@ class _StartAttendancePageState extends State<StartAttendancePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          "Check-In",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
-        ),
+        title: const Text("Check-In", style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(25),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                "Attendance Check-In",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                "Press the button below to check in.\nMake sure you're connected to classroom Wi-Fi.",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 16),
-              ),
-              const SizedBox(height: 70),
-
-              ElevatedButton(
-                onPressed: isLoading ? null : _checkIn,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6DB0A5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(40),
-                  ),
-                  minimumSize: const Size(double.infinity, 70),
-                ),
-                child: isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "Check In",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-              ),
-            ],
-          ),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: isLoading ? null : _checkIn,
+          child: isLoading
+              ? const CircularProgressIndicator(color: Colors.white)
+              : const Text("Check In"),
         ),
       ),
     );
   }
 }
-
