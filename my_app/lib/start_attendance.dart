@@ -51,14 +51,15 @@ class _StartAttendancePageState extends State<StartAttendancePage> {
         _startPolling();
         // Also check status immediately
         _checkStatus();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Failed to load session details"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      } 
+      // else {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text("Failed to load session details"),
+      //       backgroundColor: Colors.red,
+      //     ),
+      //   );
+      // }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
