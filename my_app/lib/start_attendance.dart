@@ -134,7 +134,7 @@ class _StartAttendancePageState extends State<StartAttendancePage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Check-in recorded for ${data['student']}"),
+            content: Text("Check-in recorded"),
             backgroundColor: Colors.green,
           ),
         );
